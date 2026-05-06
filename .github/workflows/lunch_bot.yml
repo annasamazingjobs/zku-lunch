@@ -1,0 +1,88 @@
+name: Lunch Bot
+
+on:
+  schedule:
+    - cron: "0 7 * * 1-5"    # 09:00 CEST  — send poll
+    - cron: "15 10 * * 1-5"  # 12:15 CEST  — reminder if no votes
+    - cron: "30 10 * * 1-5"  # 12:30 CEST  — final summary
+  workflow_dispatch:          # allow manual trigger for testing
+
+jobs:
+  send-poll:
+    name: Send Poll (9:00)
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 7 * * 1-5' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: lunch-state-${{ github.run_id }}
+          restore-keys: lunch-state-
+      - name: Send poll
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/send_poll.py
+      - name: Save state to cache
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: lunch-state-${{ github.run_id }}-poll
+
+  remind:
+    name: Reminder (12:15)
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '15 10 * * 1-5' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: lunch-state-
+          restore-keys: lunch-state-
+      - name: Run reminder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/remind.py
+      - name: Save updated state
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: lunch-state-${{ github.run_id }}-remind
+
+  summarize:
+    name: Final Summary (12:30)
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '30 10 * * 1-5' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: lunch-state-
+          restore-keys: lunch-state-
+      - name: Send summary
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/summarize.py
