@@ -1,10 +1,9 @@
 """
 collect_votes.py — Shared helper.
-Reads callback_query updates since the poll was sent and updates state.json.
+Reads poll_answer updates since the poll was sent and updates state.json.
 """
 
 import os
-import json
 import requests
 
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -13,6 +12,8 @@ BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 def collect_votes(state: dict) -> dict:
     offset = state.get("offset", 0)
+    poll_id = state.get("poll_id")
+
     voters_in = {v["id"]: v for v in state.get("voters_in", [])}
     voters_out = {v["id"]: v for v in state.get("voters_out", [])}
 
@@ -28,27 +29,27 @@ def collect_votes(state: dict) -> dict:
 
         for update in updates:
             offset = update["update_id"] + 1
-            cq = update.get("callback_query")
-            if not cq:
+            pa = update.get("poll_answer")
+            if not pa or pa.get("poll_id") != poll_id:
                 continue
 
-            user = cq["from"]
+            user = pa["user"]
             uid = user["id"]
             first = user.get("first_name", "")
             last = user.get("last_name", "")
             name = f"{first} {last}".strip() or f"User{uid}"
-            vote = cq.get("data")
+            option_ids = pa.get("option_ids", [])
 
-            # Answer the callback so Telegram stops showing the loading spinner
-            requests.post(
-                f"{BASE_URL}/answerCallbackQuery",
-                json={"callback_query_id": cq["id"], "text": "Got it! 👍"},
-            )
-
-            if vote == "in":
+            if not option_ids:
+                # User retracted their vote
+                voters_in.pop(uid, None)
+                voters_out.pop(uid, None)
+            elif 0 in option_ids:
+                # Option 0 = "✅ I'm in!"
                 voters_in[uid] = {"id": uid, "name": name}
                 voters_out.pop(uid, None)
-            elif vote == "out":
+            elif 1 in option_ids:
+                # Option 1 = "❌ Not today"
                 voters_out[uid] = {"id": uid, "name": name}
                 voters_in.pop(uid, None)
 
