@@ -1,5 +1,5 @@
 """
-remind.py — Runs at 12:15 on weekdays.
+remind.py — Runs at 12:00 on weekdays.
 Collects votes so far; sends a reminder if nobody has voted yet.
 """
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     save_state(state)
 
     count_in = len(state["voters_in"])
-    if count_in == 0:
+
 names_in = ", ".join(v["name"] for v in state["voters_in"]) or "nobody yet"
     msg = (
         f"⏰ *Lunch reminder!*\n\n"
