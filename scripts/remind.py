@@ -73,4 +73,4 @@ if __name__ == "__main__":
         print("⏰ Reminder sent — nobody had voted yet.")
     else:
         names = ", ".join(v["name"] for v in state["voters_in"])
-        print(f"👍 {count_in} people already voted in ({names}) — no reminder needed.")
+        print(f"👍 {count_in} people already replied: ({names}) — anyone else joining?")
