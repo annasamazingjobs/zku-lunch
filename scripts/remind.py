@@ -56,21 +56,19 @@ if __name__ == "__main__":
 
     count_in = len(state["voters_in"])
     if count_in == 0:
-        msg = (
-            "⏰ *Lunch reminder!*\n\n"
-            "Nobody has voted yet — are you eating today?\n"
-            "Vote on the poll above before 12:30! 👆"
-        )
-        requests.post(
-            f"{BASE_URL}/sendMessage",
-            json={
-                "chat_id": CHAT_ID,
-                "text": msg,
-                "parse_mode": "Markdown",
-                "reply_to_message_id": state["message_id"],
-            },
-        )
-        print("⏰ Reminder sent — nobody had voted yet.")
-    else:
-        names = ", ".join(v["name"] for v in state["voters_in"])
-        print(f"👍 {count_in} people already replied: ({names}) — anyone else joining?")
+names_in = ", ".join(v["name"] for v in state["voters_in"]) or "nobody yet"
+    msg = (
+        f"⏰ *Lunch reminder!*\n\n"
+        f"{count_in} people eating so far: {names_in}\n\n"
+        "Last chance to vote before 12:30! 👆"
+    )
+    requests.post(
+        f"{BASE_URL}/sendMessage",
+        json={
+            "chat_id": CHAT_ID,
+            "text": msg,
+            "parse_mode": "Markdown",
+            "reply_to_message_id": state["message_id"],
+        },
+    )
+    print(f"⏰ Reminder sent — {count_in} people in so far.")
