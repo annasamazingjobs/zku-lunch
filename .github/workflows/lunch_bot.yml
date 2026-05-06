@@ -2,16 +2,26 @@ name: Lunch Bot
 
 on:
   schedule:
-    - cron: "0 7 * * 1-5"    # 09:00 CEST  — send poll
-    - cron: "15 10 * * 1-5"  # 12:15 CEST  — reminder if no votes
-    - cron: "30 10 * * 1-5"  # 12:30 CEST  — final summary
-  workflow_dispatch:          # allow manual trigger for testing
+    - cron: "0 7 * * 1-5"
+    - cron: "15 10 * * 1-5"
+    - cron: "30 10 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run manually?"
+        required: true
+        default: "send-poll"
+        type: choice
+        options:
+          - send-poll
+          - remind
+          - summarize
 
 jobs:
   send-poll:
     name: Send Poll (9:00)
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 7 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 7 * * 1-5' || (github.event_name == 'workflow_dispatch' && inputs.job == 'send-poll')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,7 +49,7 @@ jobs:
   remind:
     name: Reminder (12:15)
     runs-on: ubuntu-latest
-    if: github.event.schedule == '15 10 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '15 10 * * 1-5' || (github.event_name == 'workflow_dispatch' && inputs.job == 'remind')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -67,7 +77,7 @@ jobs:
   summarize:
     name: Final Summary (12:30)
     runs-on: ubuntu-latest
-    if: github.event.schedule == '30 10 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '30 10 * * 1-5' || (github.event_name == 'workflow_dispatch' && inputs.job == 'summarize')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
