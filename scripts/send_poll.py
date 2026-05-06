@@ -54,8 +54,21 @@ def send_poll():
     with open("state.json", "w") as f:
         json.dump(state, f, indent=2)
 
-    print(f"✅ Poll sent (message_id={message_id}, poll_id={poll_id}, offset={offset})")
+    # Show persistent reply keyboard
+    requests.post(
+        f"{BASE_URL}/sendMessage",
+        json={
+            "chat_id": CHAT_ID,
+            "text": "🔔 Tap the button below when lunch is ready!",
+            "reply_markup": {
+                "keyboard": [[{"text": "🍽️ Lunch is ready!"}]],
+                "resize_keyboard": True,
+                "persistent": True,
+            },
+        },
+    )
 
+    print(f"✅ Poll sent (message_id={message_id}, poll_id={poll_id}, offset={offset})")
 
 if __name__ == "__main__":
     if not is_weekday():
