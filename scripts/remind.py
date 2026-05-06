@@ -1,6 +1,6 @@
 """
 remind.py — Runs at 12:00 on weekdays.
-Collects votes so far; sends a reminder if nobody has voted yet.
+Collects votes so far; sends a reminder.
 """
 
 import os
@@ -36,7 +36,6 @@ if __name__ == "__main__":
         print("📅 Weekend — skipping.")
         sys.exit(0)
 
-    # Import here so the file is found at runtime
     sys.path.insert(0, os.path.dirname(__file__))
     from collect_votes import collect_votes
 
@@ -45,7 +44,6 @@ if __name__ == "__main__":
         print("⚠️  No state.json found — poll may not have been sent today.")
         sys.exit(0)
 
-    # Check it's today's poll
     today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
     if state.get("date") != today:
         print("⚠️  State is from a different day — skipping.")
@@ -55,8 +53,7 @@ if __name__ == "__main__":
     save_state(state)
 
     count_in = len(state["voters_in"])
-
-names_in = ", ".join(v["name"] for v in state["voters_in"]) or "nobody yet"
+    names_in = ", ".join(v["name"] for v in state["voters_in"]) or "nobody yet"
     msg = (
         f"⏰ *Lunch reminder!*\n\n"
         f"{count_in} people eating so far: {names_in}\n\n"
