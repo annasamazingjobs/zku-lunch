@@ -1,6 +1,6 @@
 """
 send_poll.py — Runs at 9:00 AM on weekdays.
-Sends the lunch poll with inline keyboard and saves state to state.json.
+Sends a native Telegram poll and saves state to state.json.
 """
 
 import os
@@ -15,38 +15,28 @@ BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
 def is_weekday():
-    return datetime.datetime.utcnow().weekday() < 5  # 0=Mon, 4=Fri
+    return datetime.datetime.now(datetime.UTC).weekday() < 5
 
 
 def send_poll():
-    today = datetime.datetime.utcnow().strftime("%A, %d %B")
-    text = (
-        f"🍽️ *Lunch today — {today}*\n\n"
-        "Who's eating lunch with the team?\n"
-        "Vote below 👇 (closes at 12:30)"
-    )
-    keyboard = {
-        "inline_keyboard": [
-            [
-                {"text": "✅ I'm in!", "callback_data": "in"},
-                {"text": "❌ Not today", "callback_data": "out"},
-            ]
-        ]
-    }
+    today = datetime.datetime.now(datetime.UTC).strftime("%A, %d %B")
+
     resp = requests.post(
-        f"{BASE_URL}/sendMessage",
+        f"{BASE_URL}/sendPoll",
         json={
             "chat_id": CHAT_ID,
-            "text": text,
-            "parse_mode": "Markdown",
-            "reply_markup": keyboard,
+            "question": f"🍽️ Lunch today — {today}?",
+            "options": ["✅ I'm in!", "❌ Not today"],
+            "is_anonymous": False,   # so we can see who voted
+            "allows_multiple_answers": False,
         },
     )
     resp.raise_for_status()
     data = resp.json()
     message_id = data["result"]["message_id"]
+    poll_id = data["result"]["poll"]["id"]
 
-    # Get current update_id offset so later scripts only read NEW updates
+    # Get current offset so later scripts only read NEW updates
     updates_resp = requests.get(f"{BASE_URL}/getUpdates", params={"limit": 1, "offset": -1})
     updates_resp.raise_for_status()
     updates = updates_resp.json().get("result", [])
@@ -54,16 +44,17 @@ def send_poll():
 
     state = {
         "message_id": message_id,
+        "poll_id": poll_id,
         "offset": offset,
-        "date": datetime.datetime.utcnow().strftime("%Y-%m-%d"),
-        "voters_in": [],   # list of {"id": ..., "name": ...}
+        "date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d"),
+        "voters_in": [],
         "voters_out": [],
     }
 
     with open("state.json", "w") as f:
         json.dump(state, f, indent=2)
 
-    print(f"✅ Poll sent (message_id={message_id}, offset={offset})")
+    print(f"✅ Poll sent (message_id={message_id}, poll_id={poll_id}, offset={offset})")
 
 
 if __name__ == "__main__":
